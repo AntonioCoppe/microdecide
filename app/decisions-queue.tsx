@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { Check, X, RefreshCw } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Motion } from '@legendapp/motion';
+import { DecisionCard } from '../components/ui/decision-card';
+import { SwipeableCard } from '../components/ui/swipeable-card';
+import { Gradients, Typography, Colors } from '../constants/Colors';
+import * as Haptics from 'expo-haptics';
 
 // Mock data for decisions
 const mockDecisions = [
@@ -13,7 +19,9 @@ const mockDecisions = [
     image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHRlY2hub2xvZ3l8ZW58MHx8MHx8fDA%3D',
     providerIcon: '📧',
     confidence: 'High',
-    impact: 'Low'
+    impact: 'Low',
+    type: 'email' as const,
+    personality: '🧹 Time to declutter! Should we kick FashionHub out of your inbox?'
   },
   {
     id: '2',
@@ -24,18 +32,22 @@ const mockDecisions = [
     image: 'https://images.unsplash.com/photo-1622588907467-915ab508ae2a?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8UmVtb3RlJTIwd29yayUyMGhvbWUlMjBvZmZpY2V8ZW58MHx8MHx8fDA%3D',
     providerIcon: '🖼️',
     confidence: 'Medium',
-    impact: 'Low'
+    impact: 'Low',
+    type: 'photos' as const,
+    personality: '🧹 Spring cleaning time! These Paris duplicates are taking up space.'
   },
   {
     id: '3',
     provider: '5-Min Workout',
     title: 'Morning Stretch Routine',
     description: '5-minute stretching routine to start your day with energy',
-    icon: '🏃',
+    icon: '💪',
     image: 'https://images.unsplash.com/photo-1597452573811-85e7383195a6?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8QXRobGV0ZSUyMHNwb3J0c21hbiUyMGZpdG5lc3MlMjBneW18ZW58MHx8MHx8fDA%3D',
-    providerIcon: '🏃',
+    providerIcon: '💪',
     confidence: 'High',
-    impact: 'Medium'
+    impact: 'Medium',
+    type: 'fitness' as const,
+    personality: '🏃‍♂️ Ready to crush this quick win? 5 minutes to feel amazing!'
   },
   {
     id: '4',
@@ -46,7 +58,9 @@ const mockDecisions = [
     image: 'https://images.unsplash.com/photo-1480694313141-fce5e697ee25?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8c21hcnRwaG9uZXxlbnwwfHwwfHx8MA%3D%3D',
     providerIcon: '📧',
     confidence: 'High',
-    impact: 'Low'
+    impact: 'Low',
+    type: 'email' as const,
+    personality: '📧 TechGadgets is spamming you daily. Time for some peace?'
   },
   {
     id: '5',
@@ -57,7 +71,9 @@ const mockDecisions = [
     image: 'https://images.unsplash.com/photo-1692158961713-73690ef06e6e?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bWFuYWdlbWVudCUyMHRhc2tzfGVufDB8fDB8fHww',
     providerIcon: '🖼️',
     confidence: 'High',
-    impact: 'Low'
+    impact: 'Low',
+    type: 'photos' as const,
+    personality: '🖼️ Screenshot city! Let\'s clean up this digital mess.'
   }
 ];
 
@@ -73,109 +89,157 @@ export default function DecisionsQueueScreen() {
     }, 1500);
   };
 
-  const handleAccept = (id: string) => {
+  const handleAccept = async (id: string) => {
     setDecisions(decisions.filter(decision => decision.id !== id));
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const handleSkip = (id: string) => {
+  const handleSkip = async (id: string) => {
     // Move to end of queue
     const decision = decisions.find(d => d.id === id);
     if (decision) {
       setDecisions([...decisions.filter(d => d.id !== id), decision]);
     }
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white pt-12 pb-4 px-4 shadow-sm">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-2xl font-bold text-gray-900">Decision Queue</Text>
-          <TouchableOpacity className="p-2">
-            <RefreshCw size={24} color="#4A90E2" />
-          </TouchableOpacity>
-        </View>
-        <Text className="text-gray-500 mt-1">
-          {decisions.length} decisions in queue
-        </Text>
-      </View>
-
-      {/* Decision Cards */}
-      <ScrollView
-        className="flex-1 px-4 py-4"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+    <View className="flex-1">
+      <LinearGradient
+        colors={Gradients.premium as readonly [string, string, ...string[]]}
+        className="flex-1"
+        style={{ flex: 1 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
-        {decisions.length === 0 ? (
-          <View className="flex-1 items-center justify-center mt-20">
-            <Text className="text-xl font-semibold text-gray-700">Queue is empty!</Text>
-            <Text className="text-gray-500 mt-2">Pull to refresh for new decisions</Text>
-          </View>
-        ) : (
-          decisions.map((decision) => (
-            <View 
-              key={decision.id} 
-              className="bg-white rounded-xl shadow-sm mb-4 overflow-hidden"
-            >
-              {/* Provider Header */}
-              <View className="flex-row items-center p-4 bg-blue-50">
-                <Text className="text-2xl mr-2">{decision.providerIcon}</Text>
-                <Text className="text-lg font-semibold text-gray-800">{decision.provider}</Text>
-                <View className="flex-row ml-auto">
-                  <View className="bg-green-100 px-2 py-1 rounded-full mr-2">
-                    <Text className="text-green-800 text-xs font-medium">{decision.confidence}</Text>
-                  </View>
-                  <View className="bg-blue-100 px-2 py-1 rounded-full">
-                    <Text className="text-blue-800 text-xs font-medium">{decision.impact} Impact</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Decision Content */}
-              <View className="p-4">
-                <Text className="text-xl font-bold text-gray-900 mb-2">{decision.title}</Text>
-                <Text className="text-gray-600 mb-4">{decision.description}</Text>
-                
-                {decision.image && (
-                  <Image 
-                    source={{ uri: decision.image }} 
-                    className="w-full h-40 rounded-lg mb-4"
-                    resizeMode="cover"
-                  />
-                )}
-
-                {/* Action Buttons */}
-                <View className="flex-row justify-between mt-4">
-                  <TouchableOpacity 
-                    className="flex-row items-center justify-center bg-red-500 px-6 py-3 rounded-lg flex-1 mr-2"
-                    onPress={() => handleSkip(decision.id)}
-                  >
-                    <X size={20} color="white" />
-                    <Text className="text-white font-semibold ml-2">Skip</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    className="flex-row items-center justify-center bg-green-500 px-6 py-3 rounded-lg flex-1 ml-2"
-                    onPress={() => handleAccept(decision.id)}
-                  >
-                    <Check size={20} color="white" />
-                    <Text className="text-white font-semibold ml-2">Accept</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+        {/* Header */}
+        <Motion.View
+          className="pt-12 pb-4 px-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'timing', delay: 0.2, duration: 250 }}
+        >
+          <View className="flex-row items-center justify-between">
+            <View>
+              <Text
+                className="text-2xl font-bold text-white"
+                style={Typography.h1}
+              >
+                🎯 Decision Deck
+              </Text>
+              <Text className="text-white/80 text-sm mt-1">
+                {decisions.length} smart choices waiting
+              </Text>
             </View>
-          ))
-        )}
-      </ScrollView>
+            <TouchableOpacity
+              className="bg-white/20 backdrop-blur-md rounded-xl p-3"
+              onPress={onRefresh}
+            >
+              <RefreshCw size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        </Motion.View>
 
-      {/* Empty state illustration */}
-      {decisions.length === 0 && (
-        <View className="absolute bottom-20 left-0 right-0 items-center">
-          <Text className="text-gray-400 text-center px-8">
-            When you have decisions in your queue, they'll appear here. Pull down to refresh.
-          </Text>
+        {/* Stacked Card Deck */}
+        <View className="flex-1 px-6">
+          {decisions.length === 0 ? (
+            <Motion.View
+              className="flex-1 items-center justify-center"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'timing', delay: 0.4, duration: 300 }}
+            >
+              <Text className="text-6xl mb-4">🎉</Text>
+              <Text
+                className="text-white text-2xl font-bold text-center mb-2"
+                style={Typography.h1}
+              >
+                All Caught Up!
+              </Text>
+              <Text className="text-white/80 text-center text-lg">
+                No decisions in your queue right now
+              </Text>
+              <TouchableOpacity
+                className="mt-6 bg-white/20 backdrop-blur-md rounded-xl px-6 py-3"
+                onPress={onRefresh}
+              >
+                <Text className="text-white font-medium">Refresh for new decisions</Text>
+              </TouchableOpacity>
+            </Motion.View>
+          ) : (
+            <View className="flex-1">
+              {decisions.map((decision, index) => (
+                <Motion.View
+                  key={decision.id}
+                  className="absolute inset-0"
+                  style={{
+                    zIndex: decisions.length - index,
+                    transform: [
+                      { scale: 1 - (index * 0.05) },
+                      { translateY: index * 20 }
+                    ]
+                  }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 - (index * 0.05) }}
+                  transition={{ type: 'timing', delay: index * 0.1, duration: 200 }}
+                >
+                  {index === 0 ? (
+                    <SwipeableCard
+                      onSwipeRight={() => handleAccept(decision.id)}
+                      onSwipeLeft={() => handleSkip(decision.id)}
+                      className="flex-1"
+                    >
+                      <DecisionCard
+                        title={decision.title}
+                        description={decision.description}
+                        icon={decision.icon}
+                        type={decision.type}
+                        personality={decision.personality}
+                        onAccept={() => handleAccept(decision.id)}
+                        onSkip={() => handleSkip(decision.id)}
+                      />
+                    </SwipeableCard>
+                  ) : (
+                    <DecisionCard
+                      title={decision.title}
+                      description={decision.description}
+                      icon={decision.icon}
+                      type={decision.type}
+                      personality={decision.personality}
+                    />
+                  )}
+                </Motion.View>
+              ))}
+            </View>
+          )}
         </View>
-      )}
+
+        {/* Progress indicator */}
+        {decisions.length > 0 && (
+          <Motion.View
+            className="pb-6 px-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'timing', delay: 0.6, duration: 250 }}
+          >
+            <View className="flex-row justify-center">
+              {decisions.slice(0, 5).map((_, index) => (
+                <View
+                  key={index}
+                  className={`w-2 h-2 rounded-full mx-1 ${
+                    index === 0 ? 'bg-white' : 'bg-white/30'
+                  }`}
+                />
+              ))}
+              {decisions.length > 5 && (
+                <Text className="text-white/60 text-sm ml-2">
+                  +{decisions.length - 5} more
+                </Text>
+              )}
+            </View>
+          </Motion.View>
+        )}
+      </LinearGradient>
     </View>
   );
 }

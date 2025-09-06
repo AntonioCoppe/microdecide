@@ -4,6 +4,8 @@ import type { User } from './types';
 type AuthContextValue = {
   user: User | null;
   signInWithEmail: (email: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -17,6 +19,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     async signInWithEmail(email: string) {
       setUser({ id: `user-${email}`, email });
+    },
+    async signInWithGoogle() {
+      // TODO: integrate real Google OAuth via Supabase or Expo AuthSession
+      setUser({ id: 'google-user', email: 'google@example.com' });
+    },
+    async signInWithApple() {
+      // TODO: integrate real Apple Sign In
+      setUser({ id: 'apple-user', email: 'apple@example.com' });
     },
     async signOut() {
       setUser(null);

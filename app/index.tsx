@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, StyleSheet, Dimensions } from 'react-native';
 import { useRouter, useRootNavigationState, Redirect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Motion } from '@legendapp/motion';
 import { useAuth } from '../lib/auth';
 import { fetchEntitlements } from '../lib/entitlements';
 import { loadCounts, canGenerate, incrementGenerated } from '../lib/limits';
@@ -9,6 +11,11 @@ import { loadQueue, enqueue, accept as acceptAction, skip as skipAction, undoLas
 import type { Decision, ProviderId } from '../lib/types';
 import { track } from '../lib/analytics';
 import { requestPermissions, scheduleLocalNotification } from '../lib/notifications';
+import { DecisionCard } from '../components/ui/decision-card';
+import { SwipeableCard } from '../components/ui/swipeable-card';
+import { StreakBadge } from '../components/ui/streak-badge';
+import { Colors, Gradients, Typography } from '../constants/Colors';
+import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -77,9 +84,10 @@ export default function HomeScreen() {
     if (!decision) return;
     const queue = await loadQueue();
     const next = await acceptAction(queue, decision.id);
-    setSnackbar({ visible: true, message: 'Accepted. Undo?' });
+    setSnackbar({ visible: true, message: '🎉 Great choice! Another win in your pocket.' });
     setTimeout(() => setSnackbar(null), 7000);
     setDecision(null);
+    
     track('decision_accepted', { id: decision.id, providerId: decision.providerId });
   };
 
@@ -100,443 +108,176 @@ export default function HomeScreen() {
     setSnackbar(null);
   };
 
+  const handleSwipeAccept = async () => {
+    await handleAccept();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const handleSwipeSkip = async () => {
+    await handleSkip();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.navRow}>
-        <TouchableOpacity style={styles.navButton} onPress={() => router.push('/onboarding')}>
-          <Text style={styles.navButtonText}>Onboarding</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => router.push('/paywall')}>
-          <Text style={styles.navButtonText}>Paywall</Text>
-        </TouchableOpacity>
-      </View>
-      {paywallBlocked && (
-        <View style={{ backgroundColor: '#FFF8E1', padding: 12, marginHorizontal: 16, borderRadius: 8, marginTop: 12 }}>
-          <Text style={{ color: '#8B5E00', fontWeight: '600' }}>Daily limit reached</Text>
-          <TouchableOpacity onPress={() => router.push('/paywall')}>
-            <Text style={{ color: '#1D4ED8', marginTop: 4 }}>Upgrade to Premium</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Today's Decision</Text>
-            <Text style={styles.headerSubtitle}>Your AI assistant for micro-decisions</Text>
-          </View>
-          <View style={styles.streakContainer}>
-            <Text style={styles.streakIcon}>🔥</Text>
-            <Text style={styles.streakCount}>{streakCount}</Text>
-          </View>
-        </View>
+    <View className="flex-1">
+      <LinearGradient
+        colors={Gradients.premium as readonly [string, string, ...string[]]}
+        className="flex-1"
+        style={{ flex: 1 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
 
-        {/* Stats Card */}
-        <View style={styles.statsCard}>
-          <View style={styles.statsContent}>
+
+        <SafeAreaView className="flex-1" style={{ flex: 1 }}>
+          {/* Header */}
+          <Motion.View
+            className="flex-row items-center justify-between px-6 py-4"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'timing', delay: 0.2, duration: 250 }}
+          >
             <View>
-              <Text style={styles.statsLabel}>Decisions this week</Text>
-              <Text style={styles.statsValue}>{decisionsThisWeek}/5</Text>
-            </View>
-            <View style={styles.statsIcon}>
-              <Text style={styles.infoIcon}>ℹ️</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Decision Card */}
-        <View style={styles.decisionCard}>
-          {/* Card Header */}
-          <View style={styles.cardHeader}>
-            <View style={styles.cardIcon}>
-              <Text style={styles.emailIcon}>📧</Text>
-            </View>
-            <View style={styles.cardHeaderText}>
-              <Text style={styles.cardTitle}>{decision?.title ?? "You're caught up"}</Text>
-              <Text style={styles.cardSubtitle}>{decision?.explanation ?? 'Come back later or try enabling more providers.'}</Text>
-            </View>
-          </View>
-
-          {/* Card Content */}
-          <View style={styles.cardContent}>
-            <Text style={styles.sectionTitle}>Recent subjects:</Text>
-            <View style={styles.subjectsContainer}>
-              {decision?.payload?.example_subjects?.length
-                ? decision.payload.example_subjects.map((subject, index) => (
-                    <Text key={index} style={styles.subjectItem}>• {subject}</Text>
-                  ))
-                : (
-                    <Text style={styles.subjectItem}>No examples available.</Text>
-                  )}
-            </View>
-
-            <Text style={styles.suggestionTitle}>Why this suggestion?</Text>
-            <View style={styles.suggestionContainer}>
-              <Text style={styles.suggestionText}>
-                {decision?.explanation ?? 'All done for today.'}
+              <Text
+                className="text-2xl font-bold text-white"
+                style={Typography.h1}
+              >
+                ✨ Your Micro Win
+              </Text>
+              <Text className="text-white/80 text-sm mt-1">
+                Ready to make another smart choice?
               </Text>
             </View>
-          </View>
 
-          {/* Actions */}
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.skipButton} onPress={handleSkip} disabled={!decision}>
-              <Text style={styles.skipButtonText}>Skip</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.acceptButton} onPress={handleAccept} disabled={!decision}>
-              <Text style={styles.acceptButtonText}>Accept</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+            <StreakBadge count={streakCount} />
+          </Motion.View>
 
-        {/* Premium CTA */}
-        <View style={styles.premiumCard}>
-          <View style={styles.premiumContent}>
-            <View style={styles.premiumText}>
-              <Text style={styles.premiumTitle}>Unlock Unlimited Decisions</Text>
-              <Text style={styles.premiumSubtitle}>Get access to all decision providers and scheduling</Text>
-              <TouchableOpacity style={styles.upgradeButton} onPress={() => router.push('/paywall')}>
-                <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
-              </TouchableOpacity>
+          {/* Progress Bar */}
+          <Motion.View
+            className="mx-6 mb-6"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'timing', delay: 0.4, duration: 300 }}
+          >
+            <View className="bg-white/20 rounded-full h-3 overflow-hidden backdrop-blur-sm">
+              <Motion.View
+                className="bg-white h-full rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: `${(decisionsThisWeek / 5) * 100}%` }}
+                transition={{ type: 'spring' }}
+              />
             </View>
-            <Text style={styles.chevronIcon}>›</Text>
-          </View>
-        </View>
+            <Text className="text-white/90 text-center text-sm mt-2 font-medium">
+              💪 You've crushed {decisionsThisWeek} wins this week — keep going!
+            </Text>
+          </Motion.View>
 
-        {/* Providers Preview */}
-        <View style={styles.providersSection}>
-          <Text style={styles.providersTitle}>Decision Providers ({entitlementsLabel})</Text>
-          <View style={styles.providersGrid}>
-            {[
-              { id: 'email_unsub', title: 'Email Unsubscribe', icon: '📧', enabled: true, premium: false },
-              { id: 'photo_dupes', title: 'Photo Duplicates', icon: '📷', enabled: true, premium: false },
-              { id: 'workout', title: '5-Min Workout', icon: '💪', enabled: true, premium: true },
-            ].map((provider) => (
-              <View key={provider.id} style={[styles.providerCard, provider.premium && styles.premiumProviderCard]}>
-                <View style={styles.providerIcon}>
-                  <Text style={styles.providerIconText}>{provider.icon}</Text>
-                </View>
-                <Text style={styles.providerTitle}>{provider.title}</Text>
-                <View style={styles.providerStatus}>
-                  {provider.premium && (
-                    <View style={styles.premiumBadge}>
-                      <Text style={styles.premiumBadgeText}>Premium</Text>
-                    </View>
-                  )}
-                  <View style={[styles.statusDot, provider.enabled && styles.statusDotActive]} />
-                </View>
-              </View>
-            ))}
+          {/* Main Decision Card */}
+          <View className="flex-1 px-6">
+            {decision ? (
+              <SwipeableCard
+                onSwipeRight={handleSwipeAccept}
+                onSwipeLeft={handleSwipeSkip}
+                className="flex-1"
+              >
+                <DecisionCard
+                  title={decision.title}
+                  description={decision.explanation}
+                  icon="📧"
+                  type="email"
+                  personality="🧹 Time to declutter! Should we kick this out of your inbox?"
+                  onAccept={handleAccept}
+                  onSkip={handleSkip}
+                />
+              </SwipeableCard>
+            ) : (
+              <Motion.View
+                className="flex-1 items-center justify-center"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'timing', delay: 0.8, duration: 300 }}
+              >
+                <Text className="text-6xl mb-4">🎉</Text>
+                <Text
+                  className="text-white text-2xl font-bold text-center mb-2"
+                  style={Typography.h1}
+                >
+                  You're All Caught Up!
+                </Text>
+                <Text className="text-white/80 text-center text-lg">
+                  Come back tomorrow for your next micro-decision
+                </Text>
+              </Motion.View>
+            )}
           </View>
-        </View>
-      </ScrollView>
-      {snackbar?.visible && (
-        <View style={{ position: 'absolute', bottom: 24, left: 16, right: 16, backgroundColor: '#1F2937', borderRadius: 8, padding: 12 }}>
-          <Text style={{ color: 'white' }}>{snackbar.message}</Text>
-          <TouchableOpacity onPress={handleUndo} style={{ marginTop: 8 }}>
-            <Text style={{ color: '#93C5FD', fontWeight: '600' }}>UNDO</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </SafeAreaView>
+
+          {/* Paywall Banner */}
+          {paywallBlocked && (
+            <Motion.View
+              className="mx-6 mb-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'timing', delay: 1, duration: 250 }}
+            >
+              <Text className="text-white font-bold text-lg mb-1">
+                🚀 Ready for Unlimited Wins?
+              </Text>
+              <Text className="text-white/80 text-sm mb-3">
+                Unlock premium features and never hit daily limits again
+              </Text>
+              <TouchableOpacity
+                className="bg-white rounded-xl py-3 items-center"
+                onPress={() => router.push('/paywall')}
+              >
+                <Text className="text-indigo-600 font-bold">
+                  Upgrade to Premium
+                </Text>
+              </TouchableOpacity>
+            </Motion.View>
+          )}
+
+          {/* Navigation */}
+          <Motion.View
+            className="flex-row justify-center pb-6 gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'timing', delay: 1.2, duration: 250 }}
+          >
+            <TouchableOpacity
+              className="bg-white/20 backdrop-blur-md rounded-xl px-4 py-2 border border-white/30"
+              onPress={() => router.push('/decisions-queue')}
+            >
+              <Text className="text-white font-medium">📋 Queue</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-white/20 backdrop-blur-md rounded-xl px-4 py-2 border border-white/30"
+              onPress={() => router.push('/history')}
+            >
+              <Text className="text-white font-medium">📊 History</Text>
+            </TouchableOpacity>
+          </Motion.View>
+
+          {/* Undo Snackbar */}
+          {snackbar?.visible && (
+            <Motion.View
+              className="absolute bottom-24 left-6 right-6 bg-gray-900/90 backdrop-blur-md rounded-2xl p-4 border border-white/20"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'timing', duration: 250 }}
+            >
+              <Text className="text-white font-medium">{snackbar.message}</Text>
+              <TouchableOpacity
+                className="mt-3 bg-white/20 rounded-lg py-2 items-center"
+                onPress={handleUndo}
+              >
+                <Text className="text-white font-bold">UNDO</Text>
+              </TouchableOpacity>
+            </Motion.View>
+          )}
+        </SafeAreaView>
+      </LinearGradient>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F4F7F9',
-  },
-  navRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingTop: 12,
-    gap: 12,
-  },
-  navButton: {
-    backgroundColor: '#1D4ED8',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  navButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingTop: 24,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#7F8C8D',
-    marginTop: 4,
-  },
-  streakContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  streakIcon: {
-    fontSize: 20,
-  },
-  streakCount: {
-    marginLeft: 4,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-  },
-  statsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  statsContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statsLabel: {
-    fontSize: 14,
-    color: '#7F8C8D',
-  },
-  statsValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-  },
-  statsIcon: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#E3F2FD',
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoIcon: {
-    fontSize: 24,
-  },
-  decisionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  cardHeader: {
-    backgroundColor: '#E3F2FD',
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cardIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#BBDEFB',
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  emailIcon: {
-    fontSize: 20,
-  },
-  cardHeaderText: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontWeight: 'bold',
-    color: '#2C3E50',
-    fontSize: 16,
-  },
-  cardSubtitle: {
-    color: '#7F8C8D',
-    fontSize: 14,
-    marginTop: 2,
-  },
-  cardContent: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontWeight: '600',
-    color: '#2C3E50',
-    marginBottom: 8,
-  },
-  subjectsContainer: {
-    backgroundColor: '#F4F7F9',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  subjectItem: {
-    color: '#2C3E50',
-    paddingVertical: 2,
-  },
-  suggestionTitle: {
-    color: '#7F8C8D',
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  suggestionContainer: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  suggestionText: {
-    color: '#2C3E50',
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  skipButton: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  skipButtonText: {
-    fontWeight: '600',
-    color: '#7F8C8D',
-  },
-  acceptButton: {
-    flex: 1,
-    backgroundColor: '#4A90E2',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  acceptButtonText: {
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  premiumCard: {
-    backgroundColor: '#4A90E2',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  premiumContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  premiumText: {
-    flex: 1,
-  },
-  premiumTitle: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 18,
-    marginBottom: 4,
-  },
-  premiumSubtitle: {
-    color: '#BBDEFB',
-    marginBottom: 12,
-  },
-  upgradeButton: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  upgradeButtonText: {
-    fontWeight: 'bold',
-    color: '#4A90E2',
-  },
-  chevronIcon: {
-    color: '#FFFFFF',
-    fontSize: 24,
-  },
-  providersSection: {
-    marginBottom: 24,
-  },
-  providersTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-    marginBottom: 16,
-  },
-  providersGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  providerCard: {
-    flex: 1,
-    minWidth: '40%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  premiumProviderCard: {
-    borderColor: '#FFD700',
-  },
-  providerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F5F5F5',
-    marginBottom: 12,
-  },
-  providerIconText: {
-    fontSize: 24,
-  },
-  providerTitle: {
-    fontWeight: 'bold',
-    color: '#2C3E50',
-    marginBottom: 8,
-  },
-  providerStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  premiumBadge: {
-    backgroundColor: '#FFF3CD',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 16,
-    marginRight: 8,
-  },
-  premiumBadgeText: {
-    color: '#856404',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#E0E0E0',
-  },
-  statusDotActive: {
-    backgroundColor: '#4CAF50',
-  },
-});
+// Styles removed - now using Tailwind CSS and new design system

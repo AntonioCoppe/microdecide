@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, SafeAreaView } from 'react-native';
-import { Calendar, Filter, TrendingUp, CheckCircle, XCircle, Flame } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, SafeAreaView, Dimensions } from 'react-native';
+import { Calendar, Filter, TrendingUp, CheckCircle, XCircle, Flame, Trophy, Star } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Motion } from '@legendapp/motion';
+import { Gradients, Typography, Colors } from '../constants/Colors';
 
 // Mock data for decision history
 const mockHistory = [
@@ -71,8 +74,20 @@ const mockStats = {
   streak: 7,
   decisionsThisWeek: 5,
   totalDecisions: 42,
-  acceptanceRate: 78
+  acceptanceRate: 78,
+  level: 3,
+  xpThisWeek: 1250,
+  nextLevelXP: 2000
 };
+
+// Achievement badges
+const achievements = [
+  { id: 'first_win', title: 'First Win', icon: '🎯', earned: true, description: 'Made your first smart decision' },
+  { id: 'streak_master', title: 'Streak Master', icon: '🔥', earned: true, description: '7-day decision streak' },
+  { id: 'declutter_king', title: 'Declutter King', icon: '🧹', earned: true, description: 'Unsubscribed from 10+ newsletters' },
+  { id: 'fitness_warrior', title: 'Fitness Warrior', icon: '💪', earned: false, description: 'Completed 20 workout decisions' },
+  { id: 'photo_organizer', title: 'Photo Organizer', icon: '🖼️', earned: false, description: 'Cleaned up 100+ duplicate photos' },
+];
 
 export default function HistoryScreen() {
   const [filter, setFilter] = useState('all'); // all, accepted, skipped
@@ -95,132 +110,197 @@ export default function HistoryScreen() {
   }, {} as Record<string, typeof mockHistory>);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white pt-12 pb-4 px-4 shadow-sm">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-2xl font-bold text-gray-900">Decision History</Text>
-          <TouchableOpacity className="p-2">
-            <Filter size={24} color="#4A90E2" />
-          </TouchableOpacity>
-        </View>
-        <Text className="text-gray-500 mt-1">
-          {mockHistory.length} decisions made
-        </Text>
-      </View>
-
-      {/* Stats Summary */}
-      <View className="bg-white mx-4 mt-4 rounded-xl p-4 shadow-sm">
-        <View className="flex-row justify-between mb-4">
-          <View className="items-center">
-            <View className="flex-row items-center bg-blue-50 px-3 py-1 rounded-full">
-              <Flame color="#FF6B6B" size={16} />
-              <Text className="ml-1 font-bold text-gray-900">{mockStats.streak}</Text>
+    <View className="flex-1">
+      <LinearGradient
+        colors={Gradients.premium as readonly [string, string, ...string[]]}
+        className="flex-1"
+        style={{ flex: 1 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <SafeAreaView className="flex-1" style={{ flex: 1 }}>
+          {/* Header */}
+          <Motion.View
+            className="pt-12 pb-4 px-6"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'timing', delay: 0.2, duration: 250 }}
+          >
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text
+                  className="text-2xl font-bold text-white"
+                  style={Typography.h1}
+                >
+                  🏆 Your Journey
+                </Text>
+                <Text className="text-white/80 text-sm mt-1">
+                  {mockStats.totalDecisions} wins and counting
+                </Text>
+              </View>
+              <TouchableOpacity className="bg-white/20 backdrop-blur-md rounded-xl p-3">
+                <Filter size={20} color="white" />
+              </TouchableOpacity>
             </View>
-            <Text className="text-gray-500 text-xs mt-1">Day Streak</Text>
-          </View>
-          <View className="items-center">
-            <Text className="text-2xl font-bold text-gray-900">{mockStats.decisionsThisWeek}</Text>
-            <Text className="text-gray-500 text-xs mt-1">This Week</Text>
-          </View>
-          <View className="items-center">
-            <Text className="text-2xl font-bold text-gray-900">{mockStats.acceptanceRate}%</Text>
-            <Text className="text-gray-500 text-xs mt-1">Acceptance</Text>
-          </View>
-        </View>
-        
-        <View className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <View 
-            className="h-full bg-green-500" 
-            style={{ width: `${mockStats.acceptanceRate}%` }}
-          />
-        </View>
-      </View>
+          </Motion.View>
 
-      {/* Filter Tabs */}
-      <View className="flex-row mx-4 mt-4 bg-gray-100 rounded-xl p-1">
-        <TouchableOpacity 
-          className={`flex-1 py-2 rounded-lg items-center ${
-            filter === 'all' ? 'bg-white shadow-sm' : ''
-          }`}
-          onPress={() => setFilter('all')}
-        >
-          <Text className={filter === 'all' ? 'font-semibold text-gray-900' : 'text-gray-500'}>
-            All
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          className={`flex-1 py-2 rounded-lg items-center ${
-            filter === 'accepted' ? 'bg-white shadow-sm' : ''
-          }`}
-          onPress={() => setFilter('accepted')}
-        >
-          <Text className={filter === 'accepted' ? 'font-semibold text-green-600' : 'text-gray-500'}>
-            Accepted
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          className={`flex-1 py-2 rounded-lg items-center ${
-            filter === 'skipped' ? 'bg-white shadow-sm' : ''
-          }`}
-          onPress={() => setFilter('skipped')}
-        >
-          <Text className={filter === 'skipped' ? 'font-semibold text-red-500' : 'text-gray-500'}>
-            Skipped
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* History List */}
-      <ScrollView className="flex-1 px-4 py-4">
-        {Object.entries(groupedDecisions).map(([date, decisions]) => (
-          <View key={date} className="mb-6">
-            <View className="flex-row items-center mb-3">
-              <Text className="font-bold text-gray-700 mr-2">{date}</Text>
-              <View className="flex-1 h-px bg-gray-200" />
-            </View>
-            
-            {decisions.map((decision) => (
-              <View 
-                key={decision.id} 
-                className="bg-white rounded-xl shadow-sm mb-3 overflow-hidden"
+          <ScrollView className="flex-1 px-6">
+            {/* Level Progress Card */}
+            <Motion.View
+              className="mb-6"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'timing', delay: 0.3, duration: 250 }}
+            >
+              <LinearGradient
+                colors={Gradients.ocean as readonly [string, string, ...string[]]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="rounded-3xl p-6"
               >
-                <View className="flex-row items-center p-4">
-                  <View className="w-12 h-12 rounded-full bg-blue-50 items-center justify-center mr-3">
-                    <Text className="text-xl">{decision.icon}</Text>
+                <View className="flex-row items-center justify-between mb-4">
+                  <View className="flex-row items-center">
+                    <Trophy size={24} color="white" />
+                    <Text className="text-white font-bold text-lg ml-2">
+                      Level {mockStats.level}
+                    </Text>
                   </View>
-                  <View className="flex-1">
-                    <View className="flex-row justify-between">
-                      <Text className="font-bold text-gray-900">{decision.title}</Text>
-                      {decision.status === 'accepted' ? (
-                        <CheckCircle size={20} color="#10B981" />
-                      ) : (
-                        <XCircle size={20} color="#EF4444" />
-                      )}
-                    </View>
-                    <Text className="text-gray-600 text-sm mt-1">{decision.description}</Text>
-                    <View className="flex-row items-center mt-2">
-                      <Text className="text-gray-500 text-xs">{decision.provider}</Text>
-                      <View className="w-1 h-1 bg-gray-300 rounded-full mx-2" />
-                      <View className={`px-2 py-1 rounded-full ${
-                        decision.impact === 'High' ? 'bg-red-100' : 
-                        decision.impact === 'Medium' ? 'bg-yellow-100' : 'bg-green-100'
-                      }`}>
-                        <Text className={`text-xs ${
-                          decision.impact === 'High' ? 'text-red-800' : 
-                          decision.impact === 'Medium' ? 'text-yellow-800' : 'text-green-800'
-                        }`}>
-                          {decision.impact} Impact
-                        </Text>
-                      </View>
-                    </View>
+                  <Text className="text-white/80 text-sm">
+                    {mockStats.xpThisWeek}/{mockStats.nextLevelXP} XP
+                  </Text>
+                </View>
+
+                <View className="h-3 bg-white/20 rounded-full overflow-hidden mb-2">
+                  <Motion.View
+                    className="h-full bg-white rounded-full"
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${(mockStats.xpThisWeek / mockStats.nextLevelXP) * 100}%` }}
+                    transition={{ type: 'spring' }}
+                  />
+                </View>
+                <Text className="text-white/80 text-sm text-center">
+                  {mockStats.nextLevelXP - mockStats.xpThisWeek} XP to next level
+                </Text>
+              </LinearGradient>
+            </Motion.View>
+
+            {/* Stats Grid */}
+            <Motion.View
+              className="mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'timing', delay: 0.4, duration: 250 }}
+            >
+              <View className="flex-row gap-4">
+                <View className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                  <View className="flex-row items-center mb-2">
+                    <Flame size={20} color="#ef4444" />
+                    <Text className="text-white font-bold text-lg ml-2">{mockStats.streak}</Text>
                   </View>
+                  <Text className="text-white/80 text-sm">Day Streak</Text>
+                </View>
+
+                <View className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                  <Text className="text-white font-bold text-2xl mb-1">{mockStats.decisionsThisWeek}</Text>
+                  <Text className="text-white/80 text-sm">This Week</Text>
                 </View>
               </View>
-            ))}
-          </View>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+
+              <View className="mt-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-white font-bold">Success Rate</Text>
+                  <Text className="text-white font-bold text-lg">{mockStats.acceptanceRate}%</Text>
+                </View>
+                <View className="h-2 bg-white/20 rounded-full overflow-hidden">
+                  <View
+                    className="h-full bg-green-400 rounded-full"
+                    style={{ width: `${mockStats.acceptanceRate}%` }}
+                  />
+                </View>
+              </View>
+            </Motion.View>
+
+            {/* Achievement Badges */}
+            <Motion.View
+              className="mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'timing', delay: 0.5, duration: 250 }}
+            >
+              <Text className="text-white font-bold text-lg mb-4">🏅 Achievements</Text>
+              <View className="flex-row flex-wrap gap-3">
+                {achievements.map((achievement, index) => (
+                  <Motion.View
+                    key={achievement.id}
+                    className={`items-center p-3 rounded-2xl border ${
+                      achievement.earned
+                        ? 'bg-white/20 border-white/30'
+                        : 'bg-white/5 border-white/10'
+                    }`}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: 'timing', delay: 0.6 + (index * 0.1), duration: 250 }}
+                  >
+                    <Text className="text-2xl mb-1">{achievement.icon}</Text>
+                    <Text className={`text-xs font-medium text-center ${
+                      achievement.earned ? 'text-white' : 'text-white/50'
+                    }`}>
+                      {achievement.title}
+                    </Text>
+                  </Motion.View>
+                ))}
+              </View>
+            </Motion.View>
+
+            {/* Timeline */}
+            <Motion.View
+              className="mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'timing', delay: 0.7, duration: 250 }}
+            >
+              <Text className="text-white font-bold text-lg mb-4">📅 Recent Activity</Text>
+
+              {Object.entries(groupedDecisions).map(([date, decisions], dateIndex) => (
+                <Motion.View
+                  key={date}
+                  className="mb-4"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: 'timing', delay: 0.8 + (dateIndex * 0.1), duration: 250 }}
+                >
+                  <Text className="text-white/80 font-medium mb-3">{date}</Text>
+
+                  {decisions.map((decision, decisionIndex) => (
+                    <Motion.View
+                      key={decision.id}
+                      className="bg-white/10 backdrop-blur-md rounded-2xl p-4 mb-3 border border-white/20"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ type: 'timing', delay: 0.9 + (dateIndex * 0.1) + (decisionIndex * 0.05), duration: 250 }}
+                    >
+                      <View className="flex-row items-center">
+                        <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mr-3">
+                          <Text className="text-lg">{decision.icon}</Text>
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-white font-medium">{decision.title}</Text>
+                          <Text className="text-white/70 text-sm mt-1">{decision.description}</Text>
+                        </View>
+                        {decision.status === 'accepted' ? (
+                          <CheckCircle size={20} color="#10b981" />
+                        ) : (
+                          <XCircle size={20} color="#ef4444" />
+                        )}
+                      </View>
+                    </Motion.View>
+                  ))}
+                </Motion.View>
+              ))}
+            </Motion.View>
+          </ScrollView>
+        </SafeAreaView>
+      </LinearGradient>
+    </View>
   );
 }
