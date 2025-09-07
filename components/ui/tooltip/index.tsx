@@ -98,7 +98,7 @@ const TooltipContent = React.forwardRef<
       className={tooltipContentStyle({
         class: className,
       })}
-      pointerEvents="auto"
+      style={Object.assign({ pointerEvents: 'auto' }, props.style)}
     />
   );
 });

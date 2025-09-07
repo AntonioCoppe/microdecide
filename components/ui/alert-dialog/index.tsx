@@ -123,7 +123,7 @@ const AlertDialog = React.forwardRef<
       {...props}
       className={alertDialogStyle({ class: className })}
       context={{ size }}
-      pointerEvents="box-none"
+      style={Object.assign({ pointerEvents: 'box-none' }, props.style)}
     />
   );
 });
@@ -136,7 +136,7 @@ const AlertDialogContent = React.forwardRef<
 
   return (
     <UIAccessibleAlertDialog.Content
-      pointerEvents="auto"
+      style={Object.assign({ pointerEvents: 'auto' }, props.style)}
       ref={ref}
       initial={{
         scale: 0.9,

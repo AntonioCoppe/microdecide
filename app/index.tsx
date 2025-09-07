@@ -14,6 +14,8 @@ import { requestPermissions, scheduleLocalNotification } from '../lib/notificati
 import { DecisionCard } from '../components/ui/decision-card';
 import { SwipeableCard } from '../components/ui/swipeable-card';
 import { StreakBadge } from '../components/ui/streak-badge';
+import { Mascot, MascotPresets } from '../components/ui/mascot';
+import { Confetti, ConfettiPresets } from '../components/ui/confetti';
 import { Colors, Gradients, Typography } from '../constants/Colors';
 import * as Haptics from 'expo-haptics';
 
@@ -28,6 +30,9 @@ export default function HomeScreen() {
   const [decision, setDecision] = useState<Decision | null>(null);
   const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string } | null>(null);
   const [paywallBlocked, setPaywallBlocked] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [mascotMessage, setMascotMessage] = useState('Ready to make another smart choice?');
+  const [mascotMood, setMascotMood] = useState<'happy' | 'excited' | 'thinking' | 'celebrating' | 'encouraging' | 'wise'>('encouraging');
 
   const enabledProviders = useMemo<ProviderId[]>(() => ['email_unsub', 'photo_dupes', 'workout'], []);
 
@@ -35,7 +40,7 @@ export default function HomeScreen() {
   if (!navState?.key) return null;
 
   // Declarative redirect (safe before/after mount)
-  if (!user) return <Redirect href="/onboarding" />;
+  if (!user) return <Redirect href="/preview" />;
 
   useEffect(() => {
     let mounted = true;
@@ -84,8 +89,19 @@ export default function HomeScreen() {
     if (!decision) return;
     const queue = await loadQueue();
     const next = await acceptAction(queue, decision.id);
+    
+    // Celebration sequence
+    setShowConfetti(true);
+    setMascotMood('celebrating');
+    setMascotMessage('Woohoo! Another win in the books! You\'re on fire! 🔥');
+    
     setSnackbar({ visible: true, message: '🎉 Great choice! Another win in your pocket.' });
-    setTimeout(() => setSnackbar(null), 7000);
+    setTimeout(() => {
+      setSnackbar(null);
+      setShowConfetti(false);
+      setMascotMood('encouraging');
+      setMascotMessage('Ready for your next smart choice?');
+    }, 7000);
     setDecision(null);
     
     track('decision_accepted', { id: decision.id, providerId: decision.providerId });
@@ -130,26 +146,33 @@ export default function HomeScreen() {
 
 
         <SafeAreaView className="flex-1" style={{ flex: 1 }}>
-          {/* Header */}
+          {/* Header with Mascot */}
           <Motion.View
-            className="flex-row items-center justify-between px-6 py-4"
+            className="px-6 py-4"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'timing', delay: 0.2, duration: 250 }}
           >
-            <View>
-              <Text
-                className="text-2xl font-bold text-white"
-                style={Typography.h1}
-              >
-                ✨ Your Micro Win
-              </Text>
-              <Text className="text-white/80 text-sm mt-1">
-                Ready to make another smart choice?
-              </Text>
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-1">
+                <Text
+                  className="text-2xl font-bold text-white"
+                  style={Typography.h1}
+                >
+                  ✨ Your Micro Win
+                </Text>
+              </View>
+              <StreakBadge count={streakCount} />
             </View>
-
-            <StreakBadge count={streakCount} />
+            
+            <Mascot
+              mood={mascotMood}
+              size="small"
+              message={mascotMessage}
+              showBubble={true}
+              animated={true}
+              className="self-start"
+            />
           </Motion.View>
 
           {/* Progress Bar */}
@@ -275,6 +298,13 @@ export default function HomeScreen() {
             </Motion.View>
           )}
         </SafeAreaView>
+
+        {/* Confetti Animation */}
+        <Confetti
+          active={showConfetti}
+          onComplete={() => setShowConfetti(false)}
+          {...ConfettiPresets.decision}
+        />
       </LinearGradient>
     </View>
   );

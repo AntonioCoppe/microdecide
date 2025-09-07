@@ -148,7 +148,7 @@ const Popover = React.forwardRef<
       {...props}
       className={popoverStyle({ size, class: className })}
       context={{ size, placement }}
-      pointerEvents="box-none"
+      style={Object.assign({ pointerEvents: 'box-none' }, props.style)}
     />
   );
 });
@@ -181,7 +181,7 @@ const PopoverContent = React.forwardRef<
         size,
         class: className,
       })}
-      pointerEvents="auto"
+      style={Object.assign({ pointerEvents: 'auto' }, props.style)}
     />
   );
 });

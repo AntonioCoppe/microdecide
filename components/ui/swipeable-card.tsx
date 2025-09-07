@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, PanResponder, Animated, Dimensions, ViewStyle } from 'react-native';
+import { View, Text, PanResponder, Animated, Dimensions, ViewStyle } from 'react-native';
 import { Motion } from '@legendapp/motion';
 import * as Haptics from 'expo-haptics';
 import { DecisionCard } from './decision-card';
@@ -112,7 +112,7 @@ export function SwipeableCard({
             },
           ]}
         >
-          <View className="text-6xl text-white">👎</View>
+          <Text className="text-6xl text-white" style={{ lineHeight: 72, textAlign: 'center' }}>👎</Text>
         </Animated.View>
 
         <Animated.View
@@ -127,7 +127,7 @@ export function SwipeableCard({
             },
           ]}
         >
-          <View className="text-6xl text-white">👍</View>
+          <Text className="text-6xl text-white" style={{ lineHeight: 72, textAlign: 'center' }}>👍</Text>
         </Animated.View>
       </View>
 

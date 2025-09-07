@@ -169,7 +169,7 @@ const Drawer = React.forwardRef<
     <UIDrawer
       ref={ref}
       {...props}
-      pointerEvents="box-none"
+      style={Object.assign({ pointerEvents: 'box-none' }, props.style)}
       className={drawerStyle({ size, anchor, class: className })}
       context={{ size, anchor }}
     />
@@ -252,7 +252,7 @@ const DrawerContent = React.forwardRef<
         },
         class: `${className} ${customClass}`,
       })}
-      pointerEvents="auto"
+      style={Object.assign({ pointerEvents: 'auto' }, props.style)}
     />
   );
 });

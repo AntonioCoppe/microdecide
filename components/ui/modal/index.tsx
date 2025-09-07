@@ -104,7 +104,7 @@ const Modal = React.forwardRef<React.ElementRef<typeof UIModal>, IModalProps>(
     <UIModal
       ref={ref}
       {...props}
-      pointerEvents="box-none"
+      style={Object.assign({ pointerEvents: 'box-none' }, props.style)}
       className={modalStyle({ size, class: className })}
       context={{ size }}
     />
@@ -181,7 +181,7 @@ const ModalContent = React.forwardRef<
         size,
         class: className,
       })}
-      pointerEvents="auto"
+      style={Object.assign({ pointerEvents: 'auto' }, props.style)}
     />
   );
 });

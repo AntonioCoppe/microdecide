@@ -26,11 +26,9 @@ export function GradientCard({
             backgroundColor: 'rgba(255, 255, 255, 0.1)',
             borderWidth: 1,
             borderColor: 'rgba(255, 255, 255, 0.2)',
-            shadowColor: 'rgba(0, 0, 0, 0.1)',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 16,
+            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.03)',
             elevation: 8,
+            padding: 24, // Consistent padding using 8pt grid
           },
           style,
         ]}
